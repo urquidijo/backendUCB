@@ -41,11 +41,11 @@ export const getAllRespuestas = async (req, res) => {
 };
 
 export const getRespuestasByUsuario = async (req, res) => {
-  const { usuario_id } = req.params;
+  const { usuarioId } = req.params;
   try {
     const { rows } = await pool.query(
       "SELECT usuario_id,frescos,rapida,saludable,vegano,dulce,promo,innovador,tradicional,precio,ambiental FROM usuarios_respuestas WHERE usuario_id = $1",
-      [usuario_id]
+      [usuarioId]
     );
 
     if (rows.length === 0) {
@@ -54,6 +54,7 @@ export const getRespuestasByUsuario = async (req, res) => {
         .json({ message: "No hay respuestas para este usuario" });
     }
     res.json(rows[0]);
+    console.log(rows[0]);
   } catch (error) {
     console.error("Error al obtener respuestas:", error);
     res.status(500).json({ message: "Internal server error" });

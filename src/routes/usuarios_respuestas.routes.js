@@ -9,7 +9,7 @@ import {
 
 const router = Router();
 router.get("/respuestas", getAllRespuestas);
-router.get("/respuestas/:usuario_id", getRespuestasByUsuario);
+router.get("/respuestas/:usuarioId", getRespuestasByUsuario);
 
 router.post("/respuestas", createRespuestas);
 
