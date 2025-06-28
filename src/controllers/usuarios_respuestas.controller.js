@@ -1,5 +1,4 @@
-
-import { pool } from "../db.js";      // ⬅️  named import, igual que en el controlador de usuarios
+import { pool } from "../db.js"; // ⬅️  named import, igual que en el controlador de usuarios
 import { validationResult } from "express-validator";
 
 function mapPreferencias(body) {
@@ -22,7 +21,6 @@ function mapPreferencias(body) {
   return prefs;
 }
 
-
 export const getAllRespuestas = async (req, res) => {
   try {
     const { usuario_id } = req.query;
@@ -42,13 +40,12 @@ export const getAllRespuestas = async (req, res) => {
   }
 };
 
-
 export const getRespuestasByUsuario = async (req, res) => {
   const { usuario_id } = req.params;
   try {
     const { rows } = await pool.query(
-      "SELECT * FROM usuarios_respuestas WHERE usuario_id = $1",
-      [usuario_id],
+      "SELECT usuario_id,frescos,rapida,saludable,vegano,dulce,promo,innovador,tradicional,precio,ambiental FROM usuarios_respuestas WHERE usuario_id = $1",
+      [usuario_id]
     );
 
     if (rows.length === 0) {
@@ -103,7 +100,9 @@ export const createRespuestas = async (req, res) => {
     if (error?.code === "23505") {
       // violación de UNIQUE (usuario_id)
       return res.status(400).json({
-        errors: [{ path: "usuario_id", msg: "Ya existe registro para este usuario" }],
+        errors: [
+          { path: "usuario_id", msg: "Ya existe registro para este usuario" },
+        ],
       });
     }
     console.error("Error al crear respuestas:", error);
@@ -125,7 +124,7 @@ export const updateRespuestas = async (req, res) => {
 
   // Construcción dinámica del SET
   const sets = Object.keys(prefs).map(
-    (col, i) => `${col} = $${i + 2}`, // +2 porque $1 es usuario_id en WHERE
+    (col, i) => `${col} = $${i + 2}` // +2 porque $1 es usuario_id en WHERE
   );
   const values = Object.values(prefs);
 
@@ -137,11 +136,13 @@ export const updateRespuestas = async (req, res) => {
       WHERE usuario_id = $1
       RETURNING *
     `,
-      [usuario_id, ...values],
+      [usuario_id, ...values]
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ message: "No hay registro para actualizar" });
+      return res
+        .status(404)
+        .json({ message: "No hay registro para actualizar" });
     }
     res.json(rows[0]);
   } catch (error) {
@@ -158,12 +159,10 @@ export const deleteRespuestas = async (req, res) => {
   try {
     const { rowCount } = await pool.query(
       "DELETE FROM usuarios_respuestas WHERE usuario_id = $1",
-      [usuario_id],
+      [usuario_id]
     );
     if (rowCount === 0) {
-      return res
-        .status(404)
-        .json({ message: "No hay registro para eliminar" });
+      return res.status(404).json({ message: "No hay registro para eliminar" });
     }
     res.status(204).send();
   } catch (error) {
