@@ -6,12 +6,12 @@ import nodemailer from "nodemailer";
 
 export const enviarReset = async (req, res) => {
   const { data } = req.body;
-  const { rows } = await pool.query("SELECT * FROM usuario WHERE ci = $1" , [
-    data.ci,
+  const { rows } = await pool.query("SELECT * FROM usuario WHERE id = $1" , [
+    data.id,
   ]);
 
   if (rows.length === 0) {
-    return res.status(400).json({ msg: "CI no registrado" });
+    return res.status(400).json({ msg: "ID no registrado" });
   }
 
   const user = rows[0];

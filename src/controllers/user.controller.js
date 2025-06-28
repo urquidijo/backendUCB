@@ -7,19 +7,8 @@ export const getUsers = async (req, res) => {
     const { nombre, ci, rol, sexo } = req.query;
 
     let query = `
-      SELECT u.id,
-             u.ci,
-             u.nombre,
-             u.telefono,
-             u.sexo,
-             u.correo,
-             u.domicilio,
-             s.nombre AS sucursal,
-             r.nombre AS rol
+      SELECT u.*
       FROM usuario u
-      JOIN sucursal s ON u.id_sucursal = s.id
-      JOIN rol r ON u.id_rol = r.id
-      WHERE 1=1
     `;
 
     const params = [];
@@ -55,80 +44,19 @@ export const getUsers = async (req, res) => {
   }
 };
 
-
 export const loginProcess = async (req, res) => {
   try {
-    const resultValidation = validationResult(req);
-    if (!resultValidation.isEmpty()) {
-      return res.status(400).json({ errors: resultValidation.array() });
-    }
-    const { ci, password } = req.body;
+    const { correo, password } = req.body;
 
-    if (ci === "superUsuario" && password === "S12345") {
-      const { rows } = await pool.query(
-        `
-        SELECT u.*, 
-               s.id AS sucursal_id,
-               s.nombre AS sucursal_nombre,
-               s.direccion AS sucursal_direccion,
-               s.telefono AS sucursal_telefono,
-               s.correo AS sucursal_correo,
-               s.esta_suspendido AS sucursal_suspendido
-        FROM usuario u
-        LEFT JOIN sucursal s ON u.id_sucursal = s.id
-        WHERE u.nombre = $1
-      `,
-        [ci]
-      );
-      const userToLogin = rows[0];
-      delete userToLogin.contraseña;
-
-      // Estructura de sucursal para el front
-      const sucursal = {
-        id: userToLogin.sucursal_id,
-        nombre: userToLogin.sucursal_nombre,
-        direccion: userToLogin.sucursal_direccion,
-        telefono: userToLogin.sucursal_telefono,
-        correo: userToLogin.sucursal_correo,
-        esta_suspendido: userToLogin.sucursal_suspendido,
-      };
-
-      return res.status(200).json({
-        token: "simple-token-for-demo",
-        usuario: {
-          id: userToLogin.id,
-          nombre: userToLogin.nombre,
-          rol: userToLogin.rol,
-          sucursal: sucursal,
-        },
-        message: "Inicio de sesión exitoso",
-      });
-    }
-    // Obtener usuario con su sucursal relacionada
+    // Consultar usuario real
     const { rows } = await pool.query(
-      `
-      SELECT u.*, 
-             s.id AS sucursal_id,
-             s.nombre AS sucursal_nombre,
-             s.direccion AS sucursal_direccion,
-             s.telefono AS sucursal_telefono,
-             s.correo AS sucursal_correo,
-             s.esta_suspendido AS sucursal_suspendido
-      FROM usuario u
-      LEFT JOIN sucursal s ON u.id_sucursal = s.id
-      WHERE u.ci = $1
-    `,
-      [ci]
+      `SELECT u.* FROM usuario u WHERE u.correo = $1`,
+      [correo]
     );
 
     if (rows.length === 0) {
       return res.status(400).json({
-        errors: [
-          {
-            path: "ci",
-            msg: "CI no registrado",
-          },
-        ],
+        errors: [{ path: "correo", msg: "Correo no registrado" }],
       });
     }
 
@@ -140,36 +68,18 @@ export const loginProcess = async (req, res) => {
 
     if (isOkThePassword) {
       delete userToLogin.contraseña;
-
-      // Estructura de sucursal para el front
-      const sucursal = {
-        id: userToLogin.sucursal_id,
-        nombre: userToLogin.sucursal_nombre,
-        direccion: userToLogin.sucursal_direccion,
-        telefono: userToLogin.sucursal_telefono,
-        correo: userToLogin.sucursal_correo,
-        esta_suspendido: userToLogin.sucursal_suspendido,
-      };
-
       return res.status(200).json({
         token: "simple-token-for-demo",
         usuario: {
           id: userToLogin.id,
-          nombre: userToLogin.nombre,
-          rol: userToLogin.rol, // si tienes ese campo
-          sucursal: sucursal,
+          usuario: userToLogin.usuario,
         },
         message: "Inicio de sesión exitoso",
       });
     }
 
     return res.status(400).json({
-      errors: [
-        {
-          path: "password",
-          msg: "contraseña incorrecta",
-        },
-      ],
+      errors: [{ path: "password", msg: "Contraseña incorrecta" }],
     });
   } catch (error) {
     console.error("Error en login:", error);
@@ -179,7 +89,7 @@ export const loginProcess = async (req, res) => {
 
 export const getUser = async (req, res) => {
   const { id } = req.params;
-  const { rows } = await pool.query("SELECT * FROM usuario WHERE ID = $1", [
+  const { rows } = await pool.query("SELECT * FROM usuario WHERE correo = $1", [
     id,
   ]);
   if (rows.length === 0) {
@@ -190,25 +100,10 @@ export const getUser = async (req, res) => {
 
 export const createUser = async (req, res) => {
   try {
-    const resultValidation = validationResult(req);
-    if (!resultValidation.isEmpty()) {
-      return res.status(400).json({ errors: resultValidation.array() });
-    }
-
     const data = req.body;
 
     // Validación de campos obligatorios
-    const requiredFields = [
-      "ci",
-      "name",
-      "telefono",
-      "sexo",
-      "email",
-      "domicilio",
-      "password",
-      "id_sucursal",
-      "id_rol",
-    ];
+    const requiredFields = ["correo", "usuario", "password"];
     for (let field of requiredFields) {
       if (!data[field]) {
         return res.status(400).json({
@@ -228,21 +123,10 @@ export const createUser = async (req, res) => {
     // Insertar usuario
     const insertQuery = `
         INSERT INTO usuario 
-        (ci, nombre, telefono, sexo, correo, domicilio, contraseña, id_sucursal, id_rol)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        (correo, usuario, contraseña)
+        VALUES ($1, $2, $3)
       `;
-
-    const values = [
-      data.ci,
-      data.name,
-      data.telefono,
-      data.sexo,
-      data.email,
-      data.domicilio,
-      hashedPassword,
-      data.id_sucursal,
-      data.id_rol,
-    ];
+    const values = [data.correo, data.usuario, hashedPassword];
 
     const { rows } = await pool.query(insertQuery, values);
 
@@ -257,20 +141,12 @@ export const createUser = async (req, res) => {
 
       const errors = [];
 
-      if (detail.includes("(ci)")) {
+      if (detail.includes("(correo)")) {
         errors.push({
-          path: "ci",
-          msg: "CI ya registrado",
+          path: "correo",
+          msg: "correo ya registrado",
         });
       }
-
-      if (detail.includes("(correo)") || detail.includes("(email)")) {
-        errors.push({
-          path: "email",
-          msg: "Correo ya registrado",
-        });
-      }
-
       return res.status(400).json({ errors });
     }
 
@@ -280,36 +156,24 @@ export const createUser = async (req, res) => {
 };
 
 export const deleteUser = async (req, res) => {
-  const { ci } = req.params;
+  const { id } = req.params;
   try {
-    const userRes = await pool.query("SELECT id FROM usuario WHERE ci = $1", [
-      ci,
-    ]);
-    if (userRes.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ message: "Usuario no encontrado con ese CI" });
-    }
-
     const userId = userRes.rows[0].id;
 
     // Borrar de permiso_usuario
-    await pool.query("DELETE FROM permiso_usuario WHERE id_usuario = $1", [
-      userId,
-    ]);
-    const { rowCount } = await pool.query("DELETE FROM usuario WHERE ci = $1", [
-      ci,
+    const { rowCount } = await pool.query("DELETE FROM usuario WHERE id = $1", [
+      id,
     ]);
 
     if (rowCount === 0) {
       return res
         .status(404)
-        .json({ message: "Usuario no encontrado con ese CI" });
+        .json({ message: "Usuario no encontrado con ese id" });
     }
 
     return res.status(204).send(); // Eliminado con éxito, sin contenido
   } catch (error) {
-    console.error("Error al eliminar usuario por CI:", error);
+    console.error("Error al eliminar usuario por id:", error);
     return res.status(500).json({ message: "Error interno del servidor" });
   }
 };
