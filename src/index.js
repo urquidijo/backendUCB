@@ -30,6 +30,7 @@ import notificacionesRoutes from "./routes/notificaciones.routes.js";
 import alertasRoutes from "./routes/alertas.routes.js";
 import dispensadorMantenimientoRoutes from "./routes/dispensador_mantenimiento.routes.js";
 import seguridadSucursalRoutes from './routes/seguridadSucursal.routes.js';
+import usuariosRespuestasRoutes from "./routes/usuarios_respuestas.routes.js";
 
 const allowedOrigins = [FRONTEND_URL, "http://localhost:5173"];
 
@@ -87,6 +88,8 @@ app.use("/api/alertas", alertasRoutes);
 app.use("/api/mantenimientos", dispensadorMantenimientoRoutes);
 
 app.use("/api/seguridad-sucursal", seguridadSucursalRoutes);
+
+app.use("/api/", usuariosRespuestasRoutes);
 
 app.listen(PORT);
 console.log("server on port ", PORT);
