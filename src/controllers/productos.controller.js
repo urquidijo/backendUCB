@@ -6,7 +6,7 @@ export const getProductos = async (req, res) => {
     // Puedes agregar filtros por nombre si lo deseas como en users
     const { nombre } = req.query;
 
-    let query = `SELECT id, nombre, descripcion, imagen_url FROM producto`;
+    let query = `SELECT id, nombre, descripcion, imagen_url, precio,precio_descuento FROM producto`;
     const params = [];
     if (nombre) {
       query += ` WHERE nombre ILIKE $1`;
