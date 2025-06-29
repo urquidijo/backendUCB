@@ -89,7 +89,7 @@ export const loginProcess = async (req, res) => {
 
 export const getUser = async (req, res) => {
   const { id } = req.params;
-  const { rows } = await pool.query("SELECT * FROM usuario WHERE correo = $1", [
+  const { rows } = await pool.query("SELECT * FROM usuario WHERE id = $1", [
     id,
   ]);
   if (rows.length === 0) {

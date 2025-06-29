@@ -6,7 +6,7 @@ import morgan from "morgan";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
-
+import productosRoutes from "./routes/productos.routes.js";
 import { FRONTEND_URL } from "./config.js";
 import usuariosRespuestasRoutes from "./routes/usuarios_respuestas.routes.js";
 import restauranteRoutes from "./routes/restaurante.routes.js";
@@ -45,6 +45,7 @@ app.use("/api", authRoutes);
 
 app.use("/api", usuariosRespuestasRoutes);
 app.use("/api", iaRoutes);
+app.use("/api/productos", productosRoutes);
 
 app.use("/api", restauranteRoutes);
 
